@@ -23,7 +23,7 @@ def menu():
                 res = input("Opção inválida. Deseja abrir algum livro? (s/n) ")
             if res == 's':
                 book_name = input("Nome do livro: ")
-                files.open_file(book_name)
+                conteudo = files.get_file_content(book_name)
 
         elif choice == '3':
             book_name = input("Nome do livro: ")
