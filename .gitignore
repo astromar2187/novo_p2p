@@ -1,0 +1,9 @@
+# Ignorar arquivos compilados pelo Python
+*.pyc
+__pycache__/
+
+peer/
+
+shared/
+
+traker/
