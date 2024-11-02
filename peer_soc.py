@@ -1,208 +1,176 @@
 import socket
 import json
-
+import threading
+import os
 class PeerClient:
-    def __init__(self, ip_trk, porta_trk = 5000, livros = []):
-        self.ip_trk = ip_trk
-        self.porta_trk = porta_trk
+    def __init__(self, tracker_ip, tracker_port, books, host='0.0.0.0', port=5001):
+        self.tracker_ip = tracker_ip
+        self.tracker_port = tracker_port
+        self.books = books
         self.peer_id = None
-        self.livros = livros
+        self.host = host  # Adiciona o host do peer
+        self.port = port  # Adiciona a porta do peer
 
     def register_peer(self):
-        print("[DEBUG] Registrando o Peer no servidor...")
-
-        #garantindo que o user ta colocando o input certo
-        #while not self.livros:  
-            #entrada = input("Digite os livros separados por vírgula: ")
-            #livros = [livro.strip() for livro in entrada.split(",") if livro.strip()]  #remove espaços em branco e entradas vazias
-            
-            #if not livros:  # se a lista ainda estiver vazia, exibe a mensagem de erro
-                #print("Erro: Nenhum livro válido foi digitado. Tente novamente.")
-
+        soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        soc.connect((self.tracker_ip, self.tracker_port))
         message = {
             "type": "register_peer",
-            "livros": self.livros
+            "books": self.books
         }
-        
-        print(f"[DEBUG] Enviando mensagem para o servidor: {message}")
-        response = self.send_message_to_server(message)
-
-        # Verifica se o peer_id está presente e exibe a mensagem correspondente
+        soc.send(json.dumps(message).encode('utf-8'))
+        response = soc.recv(1024).decode('utf-8')
+        response = json.loads(response)
         self.peer_id = response.get("peer_id")
-
-        if self.peer_id is not None:
-            print(f"[DEBUG] Peer registrado com ID: {self.peer_id}")
-            print("[DEBUG] Fim do Registro do Peer")
-            return self.peer_id
-        else:
-            print("Erro ao registrar o Peer.")
-            print("[DEBUG] Fim do Registro do Peer")
-            return None
-
-    def unregister_peer(self):
-        print("[DEBUG] Desregistrando o Peer no servidor...")
-
-        message = {
-            "type": "unregister_peer",
-            "peer_id": self.peer_id
-        }
-
-        response = self.send_message_to_server(message)
-
-        if response is not None and "message" in response:
-            print(f"Resposta do servidor: {response['message']}")
-        else:
-            print("Erro: Resposta do servidor inválida.")
+        print(response["message"])
+        soc.close()
 
     def get_peer_info(self):
+        soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        soc.connect((self.tracker_ip, self.tracker_port))
         message = {
             "type": "get_peer_info",
             "peer_id": self.peer_id
         }
+        soc.send(json.dumps(message).encode('utf-8'))
+        response = soc.recv(1024).decode('utf-8')
+        response = json.loads(response)
+        for peer_id, (peer_ip, books) in response["peers_books"].items():
+            print(f"Peer ID: {peer_id}, IP: {peer_ip}, Livros: {books}")
+        soc.close()
 
-        response = self.send_message_to_server(message)
-
-        if response is not None and "message" in response:
-            print(f"Resposta do servidor: {response['message']}")
-        else:
-            print("Erro: Resposta do servidor inválida.")
-
-    # Função para atualizar a lista de livros
-    def refresh_books(self):
-        print("[DEBUG] Atualizando lista de livros...")
-        
-        '''if not self.livros:  #se a lista estiver vazia, exibe a mensagem de erro
-                print("Erro: Nenhum livro válido foi digitado. Tente novamente.")'''
-        
+    def unregister_peer(self):
+        soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        soc.connect((self.tracker_ip, self.tracker_port))
         message = {
-            "type": "refresh_books",
-            "peer_id": self.peer_id,
-            "livros": self.livros
+            "type": "unregister_peer",
+            "peer_id": self.peer_id
         }
+        soc.send(json.dumps(message).encode('utf-8'))
+        soc.close()
 
-        response = self.send_message_to_server(message)
-        
-        if response is not None and response["success"]:
-            print(f"Livros atualizados com sucesso!")
-        else:
-            print("Erro ao adicionar livros.")
-        
-
-    def search_livro(self, livro_name):
-        print(f"[DEBUG] Enviando solicitação para buscar livro: {livro_name}")
-
-        message = {
-            "type": "search_livro",
-            "livro_name": livro_name,
-            "peer_id": self.peer_id  # Envia o peer_id para o servidor
-        }
-
-        response = self.send_message_to_server(message)  # Armazena a resposta
-
-        # Verifica se a resposta é válida
-        if response is not None and "result" in response:
-            print(f"Resultado da busca: {response['result']}")
-        else:
-            print("Erro: Resposta do servidor inválida.")
-
-
-    def send_message_to_server(self, message):
+    def download_book(self, book_name):
         try:
-            client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client_socket.connect((self.ip_trk, self.porta_trk))
-            client_socket.send(json.dumps(message).encode('utf-8'))
+            soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            soc.connect((self.tracker_ip, self.tracker_port))
 
-            response = client_socket.recv(1024).decode('utf-8')
+            # Solicitar o IP do peer que possui o livro
+            message = {
+                "type": "getIp_pelo_livro",
+                "peer_id": self.peer_id,
+                "book_name": book_name
+            }
+
+            soc.send(json.dumps(message).encode('utf-8'))
+            response = soc.recv(1024).decode('utf-8')
+
+            if not response:
+                print("Erro: resposta vazia do servidor tracker.")
+                return
+            response = json.loads(response)
+
+            if response["type"] == "getIp_pelo_livro_response":
+                ip = response["peer_ip"]
+
+                # Conectar ao peer que possui o arquivo
+                peer_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                peer_socket.connect((ip, 5001))  # Supondo que o peer ouça na porta 5001
+
+                # Enviar solicitação para download do arquivo
+                request = {
+                    "type": "download_request",
+                    "book_name": book_name
+                }
+                peer_socket.send(json.dumps(request).encode('utf-8'))
+
+                # Receber o conteúdo do livro e salvar localmente
+                with open(book_name, 'wb') as f:
+                    while True:
+                        data = peer_socket.recv(1024)
+                        if not data:
+                            break
+                        f.write(data)
+                print(f"Livro '{book_name}' baixado com sucesso!")
+                peer_socket.close()
+
+                # Adicionar o livro baixado à lista de livros locais
+                self.books.append(book_name)
+                print(f"O livro '{book_name}' foi adicionado à sua lista de livros.")
+
+                # Notificar o tracker sobre a atualização da lista de livros
+                self.update_tracker_books()
+
+            else:
+                print(response["message"])
+
+            soc.close()
+
+        except json.JSONDecodeError:
+            print("Erro: resposta inválida recebida, não é JSON.")
+        except Exception as e:
+            print(f"Erro ao tentar baixar o livro: {e}")
+
+    def update_tracker_books(self):
+        """Atualiza o tracker com a lista atualizada de livros do peer."""
+        try:
+            soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            soc.connect((self.tracker_ip, self.tracker_port))
+            message = {
+                "type": "update_books",
+                "peer_id": self.peer_id,
+                "books": self.books
+            }
+            soc.send(json.dumps(message).encode('utf-8'))
+            response = soc.recv(1024).decode('utf-8')
+            response = json.loads(response)
+            if response["type"] == "update_books_response":
+                print(response["message"])
+            soc.close()
+        except Exception as e:
+            print(f"Erro ao atualizar o tracker: {e}")
+
+
+
+    def handle_client(self, client_socket):
+        try:
+            request = client_socket.recv(1024).decode('utf-8')
+            request = json.loads(request)
+
+            if request["type"] == "download_request":
+                book_name = request["book_name"]
+                if book_name in self.books:
+                    # Envie o conteúdo do livro
+                    with open(book_name, 'rb') as f:
+                        while (chunk := f.read(1024)):
+                            client_socket.send(chunk)
+                    print(f"Livro '{book_name}' enviado com sucesso!")
+                else:
+                    response = {
+                        "type": "download_response",
+                        "success": False,
+                        "message": f"Livro '{book_name}' não encontrado."
+                    }
+                    client_socket.send(json.dumps(response).encode('utf-8'))
+            else:
+                print("Tipo de solicitação inválida.")
+
+        except Exception as e:
+            print(f"Erro ao manipular cliente: {e}")
+        finally:
             client_socket.close()
 
-            response_data = json.loads(response)
-            return response_data
-            
-        except Exception as e:
-            print(f"Erro ao enviar mensagem: {e}")
-            return None
-
-
-    def download_livro(self, livro_name):
-        print(f"[DEBUG] Enviando solicitação para baixar livro: {livro_name}")
-
-        message = {
-            "type": "download_book",
-            "book_name": livro_name,
-            "peer_id": self.peer_id  # Envia o peer_id que está baixando o livro
-        }
-
-        response = self.send_message_to_server(message)
-
-        if response is not None and "success" in response:
-            if response["success"]:
-                print(f"Livro baixado com sucesso: {response['message']}")
-            else:
-                print(f"Erro ao baixar livro: {response['message']}")
-        else:
-            print("Erro: Resposta do servidor inválida.")
-
-
-    '''def mostrar_livros(self):
-        print(f"[DEBUG] Enviando solicitação para mostrar livros do Peer atual ({self.peer_id})")
-
-        message = {
-            "type": "mostrar_livros",
-            "peer_id": self.peer_id  # Envia o peer_id atual para o server
-        }
-
-        response = self.send_message_to_server(message)  # Armazena a resposta
-
-        # Verifica se a resposta é válida
-        if response is not None and "books" in response:
-            print(f"Livros do Peer atual ({self.peer_id}): {response['books']}")
-        else:
-            print("Erro: Resposta do servidor inválida.")'''
-
-
-    '''def run_client(self): 
-        self.register_peer()
+    def start_server(self):
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.bind((self.host, self.port))
+        server_socket.listen(5)
+        print(f"Servidor de Peer iniciado em {self.host}:{self.port}")
 
         while True:
-            print("\nComandos disponíveis:")
-            print("1: Buscar um livro")
-            print("2: Baixar um livro")
-            #print("3: Adicionar mais livros")
-            print(f"4: Mostrar livros do Peer atual({self.peer_id})")
-            print("5: Sair")
-            
-            user_input = input("Digite um comando: ")
+            client_socket, addr = server_socket.accept()
+            print(f"Conexão recebida de {addr}")
+            client_handler = threading.Thread(target=self.handle_client, args=(client_socket,))
+            client_handler.start()
 
-            if user_input == '1':
-                livro_name = input("Digite o nome do livro para buscar: ").strip()
-                self.search_livro(livro_name)
-
-
-            elif user_input == '2':
-                livro_name = input("Digite o nome do livro para baixar: ").strip()
-                self.download_livro(livro_name)
-
-
-            elif user_input == '3':
-                self.adicionar_livros()
-
-            elif user_input == '4':
-                self.mostrar_livros()
-
-            elif user_input == '5':
-                print("Saindo do cliente...")
-                message = {
-                    "type": "exit",
-                    "peer_id": self.peer_id  # Envia o peer_id para o servidor
-                }
-                response = self.send_message_to_server(message)  # Recebe a resposta do servidor
-                if response is not None and "message" in response:
-                    print(f"Resposta do servidor: {response['message']}")
-                break  # Encerra o loop após sair
-            else:
-                print("Comando não reconhecido! Use 1 para buscar livros, 2 para baixar livros ou 3 para sair.")'''
-
-    
 
 
 
