@@ -61,6 +61,6 @@ O **novo_p2p** foi desenvolvido com o objetivo de explorar o conceito de redes d
 2. **Configuração da Conexão:**
    - Após iniciar, o sistema solicitará a configuração do IP e da porta para estabelecer uma conexão P2P com outro dispositivo.
 3. **Transferência de Arquivos/Mensagens:** 
-   - Utilize a interface para escolher entre envio de mensagens ou arquivos.
+   - Utilize a interface para o envio de livros.
 4. **Encerramento da Conexão:** 
-   - Para encerrar, finalize o processo no terminal ou na interface de usuário, caso exista.
+   - Para encerrar, finalize na interface de usuário.
