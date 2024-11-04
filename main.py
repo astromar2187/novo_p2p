@@ -92,21 +92,22 @@ if __name__ == "__main__":
         # Baixar livro
         elif choice == '5':
             print("Lista de livros disponíveis:")
-            livros_disponiveis = soc.get_list_books()
+            livros_disponiveis = soc.get_list_books() # Obtém a lista de livros disponíveis. Do tipo [(peer_id, book), (peer_id, book), ...]
             count = 1
             for livro in livros_disponiveis:
-                print(f" {count} - {livro}")
+                print(f" {count} - {livro[1]} | Peer ID: {livro[0]}")
                 count += 1
             op = input("Digite o número correspondente ao livro que deseja baixar (ou 0 para cancelar): ")
             while not op.isdigit() or int(op) < 0 or int(op) > len(livros_disponiveis):
                 op = input("Opção inválida. Digite o número correspondente ao livro que deseja baixar (ou 0 para cancelar): ")
                 
             if int(op) != 0:
-                book_name = livros_disponiveis[int(op) - 1]
-                if book_name in files.get_files():
-                    print("[Main] Livro já está baixado.")
+                book_name = livros_disponiveis[int(op) - 1][1]
+                if book_name in livros:
+                    print("Você já possui esse livro. Download cancelado.")
+
                 else:
-                    download_choice = input("Gostaria de proceder com o download do livro? (s/n): ")
+                    download_choice = input("Tem certeza que gostaria de proceder com o download do livro? (s/n): ")
                     while download_choice not in ['s', 'n']:
                         download_choice = input("Opção inválida. Gostaria de proceder com o download do livro? (s/n): ")
                     if download_choice == 's':
@@ -115,6 +116,18 @@ if __name__ == "__main__":
                         if conteudo:
                             files.save_file(book_name, conteudo)
                             print("[Main] Download concluído. Livro salvo com sucesso.")
+
+        # Sair
+        elif choice == '6':
+            print("Saindo...")
+            soc.unregister_peer()
+            break
+
+        else:
+            print("Opção inválida.")
+
+    # Encerramento do programa
+    print("Sem conexão com o tracker.")
 
 
 '''

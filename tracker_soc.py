@@ -16,7 +16,7 @@ class Tracker:
         print("______________________________________________________________")
         for peer_id, (peer_ip, books) in self.peers_books.items():
             print(f"Peer ID: {peer_id}, IP: {peer_ip}, Livros: {books}")
-            print("\n")
+        print("\n")
 
     def handle_peer_connection(self, peer_socket, address):
         while True:
@@ -119,9 +119,10 @@ class Tracker:
                     peer_socket.send(json.dumps(response).encode('utf-8'))
 
             elif message_type == "get_list_books":
-                books = []
+                books = [] # Lista de livros de todos os peers do tipo [(peer_id, book), (peer_id, book), ...]
                 for peer_id, (peer_ip, peer_books) in self.peers_books.items():
-                    books.extend(peer_books)
+                    for book in peer_books:
+                        books.append((peer_id, book))
                 response = {
                     "type": "get_list_books_response",
                     "books": books
