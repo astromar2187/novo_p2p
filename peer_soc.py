@@ -35,8 +35,9 @@ class PeerClient:
         soc.send(json.dumps(message).encode('utf-8'))
         response = soc.recv(1024).decode('utf-8')
         response = json.loads(response)
-        for peer_id, (peer_ip, books) in response["peers_books"].items():
-            print(f"Peer ID: {peer_id}, IP: {peer_ip}, Livros: {books}")
+        peer_ip, books = response["info"]
+        print(f"Dados armazenados no tracker atualmente: ")
+        print(f"Peer ID: {self.peer_id} | IP: {peer_ip} | Livros: {books}")
         soc.close()
 
     def unregister_peer(self):

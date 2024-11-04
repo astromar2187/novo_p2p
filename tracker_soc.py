@@ -54,10 +54,17 @@ class Tracker:
                 self.get_peer_books()
 
             elif message_type == "get_peer_info":
-                response = {
-                    "type": "get_peer_info_response",
-                    "peers_books": self.peers_books[peer_id]
-                }
+                if peer_id and peer_id in self.peers_books:
+                    peer_info = self.peers_books[peer_id] # {peer_id: (ip, [books])} / peer_info = (ip, [books])
+                    response = {
+                        "type": "get_peer_info_response",
+                        "info": peer_info
+                    }
+                else:
+                    response = {
+                        "type": "error",
+                        "message": "Peer ID não encontrado."
+                    }
                 peer_socket.send(json.dumps(response).encode('utf-8'))
 
             elif message_type == "unregister_peer":
