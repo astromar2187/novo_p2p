@@ -7,7 +7,6 @@ class Tracker:
     def __init__(self):
         self.ip = "192.168.0.65"
         self.port = 5000
-        #self.peers_active = {}  # {peer_id: (ip, activeness)}
         self.peers_books = {}  # {peer_id: (ip, [books])}
         self.id_counter = 1
 
