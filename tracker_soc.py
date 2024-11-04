@@ -7,16 +7,46 @@ class Tracker:
     def __init__(self):
         self.ip = "192.168.15.53"
         self.port = 5000
-        #self.peers_active = {}  # {peer_id: (ip, activeness)}
+        self.peers_active = {}  # {peer_id: (ip, activeness)}
         self.peers_books = {}  # {peer_id: (ip, [books])}
         self.id_counter = 1
+        self.check_interval = 10 # 3 minutos
+        self.check_attempts = 3
 
+    
     def get_peer_books(self):
         print("\nLista de peers atualizada em", time.ctime())
         print("______________________________________________________________")
         for peer_id, (peer_ip, books) in self.peers_books.items():
             print(f"Peer ID: {peer_id}, IP: {peer_ip}, Livros: {books}")
             print("\n")
+
+    def is_peer_active(self, peer_ip):
+        active = False  # Inicialmente, o peer é considerado inativo
+        for attempt in range(self.check_attempts):
+            try:
+                print(f"Verificando conectividade com {peer_ip}... Tentativa {attempt + 1}")
+                with socket.create_connection((peer_ip, 5010), timeout=5):
+                    active = True  # Se a conexão for bem-sucedida em qualquer uma das tentativas, o peer é considerado ativo
+                    print(f"Peer {peer_ip} está ativo.")
+                    break
+            except (socket.timeout, ConnectionRefusedError, OSError):
+                continue
+        return active  # Retorna True se o peer estiver ativo, False caso contrário
+
+    def check_peers_connectivity(self):
+        while True:
+            time.sleep(self.check_interval)  # Esperar 3 minutos
+            print("\nVerificando conectividade dos peers...")
+            for peer_id in list(self.peers_books.keys()):
+                peer_ip, books = self.peers_books[peer_id]  # {peer_id: (ip, [books])}
+                if not self.is_peer_active(peer_ip):  # Se o peer não estiver ativo
+                    print(f"Peer {peer_id} ({peer_ip}) não respondeu. Removendo...")
+                    self.peers_active[peer_id] = False  # Marcar o peer como inativo
+                    del self.peers_books[peer_id]  # Remover o peer da lista de peers
+
+            print("Verificação de conectividade concluída.")
+            self.get_peer_books()  # Atualizar a lista de peers
 
     def handle_peer_connection(self, peer_socket, address):
         while True:
@@ -139,6 +169,11 @@ class Tracker:
         server_socket.bind((self.ip, self.port))
         server_socket.listen(5)
         print(f"Servidor iniciado em {self.ip}:{self.port}")
+
+        # Iniciar thread para verificar a conectividade dos peers
+        '''self.check_thread = threading.Thread(target=self.check_peers_connectivity)
+        self.check_thread.daemon = True
+        self.check_thread.start()'''
 
         while True:
             peer_socket, address = server_socket.accept()
