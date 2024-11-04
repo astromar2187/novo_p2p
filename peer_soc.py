@@ -78,7 +78,7 @@ class PeerClient:
 
                 # Conectar ao peer que possui o arquivo
                 peer_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                peer_socket.connect((ip, 5001))  # Supondo que o peer ouça na porta 5001
+                peer_socket.connect((ip, 5001)) 
 
                 # Enviar solicitação para download do arquivo
                 request = {
