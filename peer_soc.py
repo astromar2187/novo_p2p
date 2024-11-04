@@ -11,6 +11,9 @@ class PeerClient:
         self.host = host  # Adiciona o host do peer
         self.port = port  # Adiciona a porta do peer
 
+    def livros(self, livros):
+        self.books =livros
+
     def register_peer(self):
         soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         soc.connect((self.tracker_ip, self.tracker_port))
@@ -137,9 +140,9 @@ class PeerClient:
         soc.send(json.dumps(message).encode('utf-8'))
         response = soc.recv(1024).decode('utf-8')
         response = json.loads(response)
-        books = response["books"]
+        info = response["info"]
         soc.close()
-        return books
+        return info
 
     def handle_client(self, client_socket):
         try:
@@ -189,7 +192,6 @@ class PeerClient:
             print(f"Conexão recebida de {addr}")
             client_handler = threading.Thread(target=self.handle_client, args=(client_socket,))
             client_handler.start()
-
 
 
 
