@@ -84,10 +84,10 @@ class Estilos:
         print("\n")
         
         # Quebra o conteúdo do livro em linhas de acordo com a largura da tela
-        book_content = [book_content[i:i+self.dimensao_tela] for i in range(0, len(book_content), self.dimensao_tela)]
+        #book_content = [book_content[i:i+self.dimensao_tela] for i in range(0, len(book_content), self.dimensao_tela)]
 
-        for line in book_content:
-            self.left(line, RESET)
+        # Exibe o conteúdo do livro
+        print(f"{RESET}{book_content}")
 
         print(f"{RED}{self.repetir_caractere('_', self.dimensao_tela)}")
         #print("\n")
