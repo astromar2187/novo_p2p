@@ -4,9 +4,6 @@ import threading
 from estilos import Estilos
 from file_manager import FileManager
 
-'''def get_files():
-    # Obtém todos os arquivos .txt no diretório atual
-    return [f for f in os.listdir() if f.endswith('.txt')]'''
 
 if __name__ == "__main__":
     # Inicialização de estilos e gerenciador de arquivos
@@ -71,7 +68,7 @@ if __name__ == "__main__":
                     estilos.exibir_cont_livro(book_name, conteudo)
 
         # Remover livro baixado
-        elif choice == '4': #MELHORAR ISSO AQUI PELO AMOR DE DEUS
+        elif choice == '4': 
             print("Livros baixados:")
             livros = files.get_files()
             count = 1
