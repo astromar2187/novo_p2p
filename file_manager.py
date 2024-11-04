@@ -9,7 +9,8 @@ class FileManager:
             os.makedirs(self.dir)
 
     def get_files(self):
-        return os.listdir(self.dir)
+        # Obtém todos os arquivos .txt no diretório atual
+        return [f for f in os.listdir(self.dir) if f.endswith('.txt')]
 
     def search_file(self, file_name):
         files = self.get_files()
@@ -26,10 +27,10 @@ class FileManager:
         else:
             return f"Arquivo '{file_name}' não encontrado"
 
-    def add_file(self, file_name, file_content):
+    def save_file(self, file_name, content):
         with open(f"{self.dir}/{file_name}", 'w') as file:
-            file.write(file_content)
-        return f"Arquivo '{file_name}' adicionado com sucesso!"
+            file.write(content)
+        return f"Arquivo '{file_name}' salvo com sucesso!"
     
     def get_file_content(self, file_name):
         with open(f"{self.dir}/{file_name}", 'r') as file:

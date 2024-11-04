@@ -65,7 +65,7 @@ class PeerClient:
             response = soc.recv(1024).decode('utf-8')
 
             if not response:
-                print("Erro: resposta vazia do servidor tracker.")
+                print("[Socket]Erro: resposta vazia do servidor tracker.")
                 return
             response = json.loads(response)
 
@@ -83,22 +83,20 @@ class PeerClient:
                 }
                 peer_socket.send(json.dumps(request).encode('utf-8'))
 
-                # Receber o conteúdo do livro e salvar localmente
-                with open(book_name, 'wb') as f:
-                    while True:
-                        data = peer_socket.recv(1024)
-                        if not data:
-                            break
-                        f.write(data)
-                print(f"Livro '{book_name}' baixado com sucesso!")
+                # Receber o arquivo
+                data = peer_socket.recv(1024).decode('utf-8')
+                if data:
+                    print(f"[Socket]Livro '{book_name}' recebido com sucesso!")
+                    # Adicionar o livro baixado à lista de livros locais
+                    self.books.append(book_name)
+                    print(f"[Socket]O livro '{book_name}' foi adicionado à sua lista de livros.")
+
+                    # Notificar o tracker sobre a atualização da lista de livros
+                    self.update_tracker_books()
+                    return data
+                else:
+                    print(f"[Socket]Arquivo vazio.")
                 peer_socket.close()
-
-                # Adicionar o livro baixado à lista de livros locais
-                self.books.append(book_name)
-                print(f"O livro '{book_name}' foi adicionado à sua lista de livros.")
-
-                # Notificar o tracker sobre a atualização da lista de livros
-                self.update_tracker_books()
 
             else:
                 print(response["message"])
@@ -106,9 +104,9 @@ class PeerClient:
             soc.close()
 
         except json.JSONDecodeError:
-            print("Erro: resposta inválida recebida, não é JSON.")
+            print("[Socket]Erro: resposta inválida recebida, não é JSON.")
         except Exception as e:
-            print(f"Erro ao tentar baixar o livro: {e}")
+            print(f"[Socket]Erro ao tentar baixar o livro: {e}")
 
     def update_tracker_books(self):
         """Atualiza o tracker com a lista atualizada de livros do peer."""
@@ -129,7 +127,18 @@ class PeerClient:
         except Exception as e:
             print(f"Erro ao atualizar o tracker: {e}")
 
-
+    def get_list_books(self):
+        soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        soc.connect((self.tracker_ip, self.tracker_port))
+        message = {
+            "type": "get_list_books"
+        }
+        soc.send(json.dumps(message).encode('utf-8'))
+        response = soc.recv(1024).decode('utf-8')
+        response = json.loads(response)
+        books = response["books"]
+        soc.close()
+        return books
 
     def handle_client(self, client_socket):
         try:
@@ -140,10 +149,19 @@ class PeerClient:
                 book_name = request["book_name"]
                 if book_name in self.books:
                     # Envie o conteúdo do livro
-                    with open(book_name, 'rb') as f:
-                        while (chunk := f.read(1024)):
-                            client_socket.send(chunk)
-                    print(f"Livro '{book_name}' enviado com sucesso!")
+                    try:
+                        book_path = os.path.join('book_files', book_name)
+                        with open(book_path, 'rb') as f:
+                            while (chunk := f.read(1024)):
+                                client_socket.send(chunk)
+                        print(f"Livro '{book_name}' enviado com sucesso!")
+                    except FileNotFoundError:
+                        response = {
+                            "type": "download_response",
+                            "success": False,
+                            "message": f"Livro '{book_name}' não encontrado no servidor."
+                        }
+                        client_socket.send(json.dumps(response).encode('utf-8'))
                 else:
                     response = {
                         "type": "download_response",

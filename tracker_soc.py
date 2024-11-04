@@ -5,8 +5,9 @@ import time
 
 class Tracker:
     def __init__(self):
-        self.ip = "192.168.0.65"
+        self.ip = "192.168.15.53"
         self.port = 5000
+        #self.peers_active = {}  # {peer_id: (ip, activeness)}
         self.peers_books = {}  # {peer_id: (ip, [books])}
         self.id_counter = 1
 
@@ -55,7 +56,7 @@ class Tracker:
             elif message_type == "get_peer_info":
                 response = {
                     "type": "get_peer_info_response",
-                    "peers_books": self.peers_books
+                    "peers_books": self.peers_books[peer_id]
                 }
                 peer_socket.send(json.dumps(response).encode('utf-8'))
 
@@ -71,9 +72,11 @@ class Tracker:
                 peer_with_book = None
 
                 # Procurar o peer que tem o livro
+                print(f"[Socket]Procurando livro '{book_name}'...")
                 for peer_id, (peer_ip, books) in self.peers_books.items():
                     if book_name in books:
                         peer_with_book = (peer_id, peer_ip)
+                        print(f"[Socket]Livro '{book_name}' encontrado no peer '{peer_id}'")
                         break
 
                 if peer_with_book:
@@ -108,6 +111,15 @@ class Tracker:
                     }
                     peer_socket.send(json.dumps(response).encode('utf-8'))
 
+            elif message_type == "get_list_books":
+                books = []
+                for peer_id, (peer_ip, peer_books) in self.peers_books.items():
+                    books.extend(peer_books)
+                response = {
+                    "type": "get_list_books_response",
+                    "books": books
+                }
+                peer_socket.send(json.dumps(response).encode('utf-8'))
 
 
         except Exception as e:
