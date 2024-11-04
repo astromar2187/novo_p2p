@@ -1,0 +1,1 @@
+Um livro que explica conceitos fundamentais sobre redes de computadores, incluindo protocolos Peer to Peer.
