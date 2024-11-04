@@ -5,7 +5,7 @@ import time
 
 class Tracker:
     def __init__(self):
-        self.ip = "192.168.15.53"
+        self.ip = "192.168.0.65"
         self.port = 5000
         #self.peers_active = {}  # {peer_id: (ip, activeness)}
         self.peers_books = {}  # {peer_id: (ip, [books])}
@@ -16,7 +16,7 @@ class Tracker:
         print("______________________________________________________________")
         for peer_id, (peer_ip, books) in self.peers_books.items():
             print(f"Peer ID: {peer_id}, IP: {peer_ip}, Livros: {books}")
-        print("\n")
+            print("\n")
 
     def handle_peer_connection(self, peer_socket, address):
         while True:
@@ -106,26 +106,30 @@ class Tracker:
                     self.peers_books[peer_id] = (peer_ip, books)
                     print(f"Livros do Peer '{peer_id}' atualizados: {books}")
                     response = {
-                        "type": "update_books_response",
-                        "message": "Lista de livros atualizada no tracker."
+                            "type": "update_books_response",
+                            "message": "Lista de livros atualizada no tracker."
                     }
                     peer_socket.send(json.dumps(response).encode('utf-8'))
                     self.get_peer_books()
                 else:
                     response = {
-                        "type": "error",
-                        "message": "Peer ID não encontrado para atualização."
-                    }
+                            "type": "error",
+                            "message": "Peer ID não encontrado para atualização."
+                        }
                     peer_socket.send(json.dumps(response).encode('utf-8'))
 
+
             elif message_type == "get_list_books":
-                books = [] # Lista de livros de todos os peers do tipo [(peer_id, book), (peer_id, book), ...]
+                info = {
+                      
+                }
+                
+
                 for peer_id, (peer_ip, peer_books) in self.peers_books.items():
-                    for book in peer_books:
-                        books.append((peer_id, book))
+                    info[peer_id] = peer_ip,peer_books
                 response = {
                     "type": "get_list_books_response",
-                    "books": books
+                    "info": info
                 }
                 peer_socket.send(json.dumps(response).encode('utf-8'))
 
